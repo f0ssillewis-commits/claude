@@ -34,4 +34,17 @@ python trading_bot.py               # check for a crossover and trade if one occ
 python test_alpaca_connection.py    # show buying power and positions
 ```
 
-The signal uses daily closes, so run the bot once per trading day (e.g. via cron shortly after market open). Orders are market orders with `day` time-in-force; if placed while the market is closed they queue for the next open.
+The signal compares the last two *completed* trading days (today's in-progress price is ignored before the 4pm close). Orders are market orders with `day` time-in-force. On market holidays the bot logs that the market is closed and does nothing.
+
+## Automated schedule (GitHub Actions)
+
+`.github/workflows/trading-bot.yml` runs the bot every Monday-Friday at 9:30 AM ET (handles daylight saving automatically). It needs two repository secrets, added under **Settings → Secrets and variables → Actions**:
+
+- `APCA_API_KEY_ID`
+- `APCA_API_SECRET_KEY`
+
+You can also trigger a run manually from the **Actions** tab ("Trading bot" → "Run workflow"). GitHub's scheduler can start runs a few minutes late.
+
+## Logs
+
+Every run appends to `logs/trading_bot.log`, which the workflow commits back to the repository, so you can read the full history on GitHub. Each run's console output is also visible in the Actions tab.

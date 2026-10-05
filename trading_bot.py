@@ -2,42 +2,76 @@
 """Moving average crossover trading bot for an Alpaca paper trading account."""
 
 import json
+import logging
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import requests
 import yfinance as yf
 from dotenv import load_dotenv
 
-CONFIG_PATH = Path(__file__).parent / "config.json"
+BASE_DIR = Path(__file__).parent
+CONFIG_PATH = BASE_DIR / "config.json"
+LOG_PATH = BASE_DIR / "logs" / "trading_bot.log"
+MARKET_TZ = ZoneInfo("America/New_York")
+
+log = logging.getLogger("trading_bot")
+
+
+def setup_logging():
+    LOG_PATH.parent.mkdir(exist_ok=True)
+    formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M:%S ET")
+    formatter.converter = lambda t: datetime.fromtimestamp(t, MARKET_TZ).timetuple()
+    for handler in (logging.FileHandler(LOG_PATH), logging.StreamHandler(sys.stdout)):
+        handler.setFormatter(formatter)
+        log.addHandler(handler)
+    log.setLevel(logging.INFO)
+
+
+def fail(message):
+    log.error(message)
+    sys.exit(1)
 
 
 def load_config():
     with open(CONFIG_PATH) as f:
         config = json.load(f)
     if config["short_window"] >= config["long_window"]:
-        sys.exit("ERROR: short_window must be smaller than long_window")
+        fail("short_window must be smaller than long_window")
     if config["lookback_days"] < config["long_window"] + 1:
-        sys.exit("ERROR: lookback_days must be at least long_window + 1")
+        fail("lookback_days must be at least long_window + 1")
     return config
 
 
 def load_credentials():
-    load_dotenv(Path(__file__).parent / ".env")
+    load_dotenv(BASE_DIR / ".env")
     api_key = os.getenv("APCA_API_KEY_ID")
     secret_key = os.getenv("APCA_API_SECRET_KEY")
     if not api_key or not secret_key:
-        sys.exit("ERROR: Set APCA_API_KEY_ID and APCA_API_SECRET_KEY in .env (see .env.example)")
+        fail("Set APCA_API_KEY_ID and APCA_API_SECRET_KEY in .env or the environment")
     return {"APCA-API-KEY-ID": api_key, "APCA-API-SECRET-KEY": secret_key}
 
 
-def fetch_closes(symbol, lookback_days):
+def is_trading_day(base_url, headers, today):
+    params = {"start": today.isoformat(), "end": today.isoformat()}
+    response = requests.get(f"{base_url}/v2/calendar", headers=headers, params=params, timeout=10)
+    response.raise_for_status()
+    return any(day["date"] == today.isoformat() for day in response.json())
+
+
+def fetch_closes(symbol, lookback_days, now):
     # Pull extra history so we're guaranteed `lookback_days` trading days after weekends/holidays.
     history = yf.Ticker(symbol).history(period="1y", interval="1d")
     if history.empty:
-        sys.exit(f"ERROR: No price data returned for {symbol}")
-    return history["Close"].tail(lookback_days)
+        fail(f"No price data returned for {symbol}")
+    closes = history["Close"]
+    # Before the 4pm close, today's bar is an in-progress price, not a real daily close.
+    if closes.index[-1].date() == now.date() and now.hour < 16:
+        closes = closes.iloc[:-1]
+    return closes.tail(lookback_days)
 
 
 def detect_crossover(closes, short_window, long_window):
@@ -91,37 +125,50 @@ def main():
     symbol = config["symbol"]
     qty = config["trade_quantity"]
     base_url = config["alpaca_base_url"]
+    now = datetime.now(MARKET_TZ)
 
-    print(f"Fetching last {config['lookback_days']} trading days of {symbol}...")
-    closes = fetch_closes(symbol, config["lookback_days"])
+    log.info("=== Run started for %s ===", symbol)
+
+    if not is_trading_day(base_url, headers, now.date()):
+        log.info("Market is closed today (%s). No action taken.", now.date())
+        return
+
+    log.info("Fetching last %d trading days of %s", config["lookback_days"], symbol)
+    closes = fetch_closes(symbol, config["lookback_days"], now)
 
     signal, d = detect_crossover(closes, config["short_window"], config["long_window"])
     s, l = config["short_window"], config["long_window"]
-    print(f"As of {d['date']} (close ${d['close']:.2f}):")
-    print(f"  Previous day: {s}-day MA ${d['prev_short']:.2f} | {l}-day MA ${d['prev_long']:.2f}")
-    print(f"  Latest day:   {s}-day MA ${d['curr_short']:.2f} | {l}-day MA ${d['curr_long']:.2f}")
+    log.info("Latest close %s: $%.2f", d["date"], d["close"])
+    log.info("Previous day: %d-day MA $%.2f | %d-day MA $%.2f", s, d["prev_short"], l, d["prev_long"])
+    log.info("Latest day:   %d-day MA $%.2f | %d-day MA $%.2f", s, d["curr_short"], l, d["curr_long"])
 
     if signal is None:
-        print("No crossover detected. No trade placed.")
+        log.info("No crossover detected. No trade placed.")
         return
 
-    print(f"Crossover detected: {signal.upper()} signal")
+    log.info("Crossover detected: %s signal", signal.upper())
     position_qty = get_position_qty(base_url, headers, symbol)
+    log.info("Current %s position: %g share(s)", symbol, position_qty)
 
     # Long-only: never open a short, and don't stack buys on an existing position.
     if signal == "buy" and position_qty > 0:
-        print(f"Already holding {position_qty:g} share(s) of {symbol}. Skipping buy.")
+        log.info("Already holding %s. Skipping buy.", symbol)
         return
     if signal == "sell" and position_qty < qty:
-        print(f"Holding {position_qty:g} share(s) of {symbol}, need {qty} to sell. Skipping sell.")
+        log.info("Not enough shares to sell %d. Skipping sell.", qty)
         return
 
     order = place_market_order(base_url, headers, symbol, qty, signal)
-    print(f"Order placed: {signal.upper()} {qty} {symbol} (order id {order['id']}, status {order['status']})")
+    log.info("Order placed: %s %d %s (order id %s, status %s)",
+             signal.upper(), qty, symbol, order["id"], order["status"])
 
 
 if __name__ == "__main__":
+    setup_logging()
     try:
         main()
     except requests.exceptions.HTTPError as e:
-        sys.exit(f"ERROR: Alpaca API returned {e.response.status_code}: {e.response.text}")
+        fail(f"Alpaca API returned {e.response.status_code}: {e.response.text}")
+    except Exception:
+        log.exception("Unexpected error")
+        sys.exit(1)
