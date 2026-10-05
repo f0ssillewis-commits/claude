@@ -39,8 +39,13 @@ Run one mode at a time per paper account: both modes trade the same Alpaca posit
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env   # then put your Alpaca paper API key and secret in .env
+cp .env.example .env   # then fill in your keys
 ```
+
+`.env` needs:
+
+- `APCA_API_KEY_ID`, `APCA_API_SECRET_KEY`: Alpaca paper keys (needed by both bots for market data and the market clock)
+- `T212_API_KEY`, `T212_API_SECRET`: Trading 212 practice keys (the Trading 212 bot is skipped until these are set)
 
 `.env` is git-ignored, so your credentials stay on your machine.
 
@@ -91,16 +96,17 @@ python trading_bot.py config_trading212.json   # Trading 212: one pass over ever
 python test_alpaca_connection.py    # show the Alpaca account's buying power and positions
 ```
 
-When the market is closed (including holidays) the bot exits without doing anything. If one symbol fails (bad ticker, data error), the others still run and the run is marked failed in GitHub Actions.
+When the market is closed (including holidays) the bot exits without doing anything. If one symbol fails (bad ticker, data error), the others still run and the bot exits with an error code.
 
-## Automated schedule (GitHub Actions)
+## Running automatically on this machine
 
-`.github/workflows/trading-bot.yml` runs the bot every 15 minutes on weekdays across market hours (daylight saving handled automatically). Each run executes the Alpaca bot, then the Trading 212 bot; a failure in one doesn't stop the other. Repository secrets, added under **Settings → Secrets and variables → Actions**:
+```bash
+python run_local.py
+```
 
-- `APCA_API_KEY_ID`, `APCA_API_SECRET_KEY`: Alpaca paper keys (needed by both bots for market data)
-- `T212_API_KEY`, `T212_API_SECRET`: Trading 212 practice keys (the Trading 212 step is skipped until these exist)
+Leave it running: it runs the Alpaca bot and then the Trading 212 bot one minute after every 15-minute mark (9:31, 9:46, ... ET) on weekdays during US market hours (14:30–21:00 UK most of the year), and sleeps the rest of the time. Each bot runs as its own process, so one failing never stops the other. Stop it with Ctrl+C.
 
-You can also trigger a run manually from the **Actions** tab ("Trading bot" → "Run workflow"). GitHub's scheduler often starts runs late and occasionally skips them; that's acceptable for paper testing, but a live account should run on an always-on machine instead.
+The computer must stay on and awake during market hours (disable sleep, or the runs are missed). A missed run doesn't lose a crossover: each bot remembers each symbol's last above/below state, so the next run catches it, just later.
 
 ## Trading 212 notes
 
@@ -117,4 +123,4 @@ Each bot appends one line per symbol plus a summary and account line to its log 
 === Account: settled $240.00 + unsettled $0.00 + positions $20.00 = $260.00 (started $260.00) ===
 ```
 
-The workflow commits the log and `state/` back to the repository after each market-hours run, so you can read the full history on GitHub.
+Logs and state files stay on this machine (in `logs/` and `state/`).

@@ -7,4 +7,5 @@ When making changes, design for that live scenario, not for the $100k paper bala
 - Prefer dollar-amount (fractional/notional) orders over whole shares, since most watchlist symbols cost more than the whole account.
 - Paper results should stay realistic for small capital; don't rely on paper-only buying power.
 - Switching to live means changing `alpaca_base_url` to `https://api.alpaca.markets` (Alpaca) or `t212_base_url` to `https://live.trading212.com/api/v0` (Trading 212) and using live API keys.
+- The bots run on the user's own machine via `run_local.py` (GitHub Actions scheduling was dropped as unreliable).
 - Trading 212 accounts are GBP; its API has no market data, so prices and the market clock come from Alpaca.
