@@ -1,0 +1,8 @@
+{
+  "symbol": "AAPL",
+  "short_window": 20,
+  "long_window": 50,
+  "trade_quantity": 1,
+  "lookback_days": 100,
+  "alpaca_base_url": "https://paper-api.alpaca.markets"
+}

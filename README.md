@@ -1,82 +1,37 @@
-# Alpaca Paper Trading Test
+# Alpaca Moving Average Crossover Bot
 
-This project tests the connection to your Alpaca paper trading account and retrieves account information.
+Trades a single stock on an Alpaca **paper** account using a moving average crossover:
+
+- **Buy** when the short MA crosses *above* the long MA between the last two trading days
+- **Sell** when the short MA crosses *below* the long MA between the last two trading days
+
+The bot is long-only: it skips a buy if you already hold the stock and skips a sell if you don't hold enough shares (so it never opens a short).
 
 ## Setup
 
-### 1. Install Dependencies
-
 ```bash
 pip install -r requirements.txt
+cp .env.example .env   # then put your Alpaca paper API key and secret in .env
 ```
 
-### 2. Get Your Alpaca API Credentials
+`.env` is git-ignored, so your credentials stay on your machine.
 
-1. Go to [Alpaca Dashboard](https://app.alpaca.markets/brokerage/account/api)
-2. Under "API Keys", create a new key or copy your existing one
-3. You'll need:
-   - **API Key ID** (your API key)
-   - **Secret Key** (your secret key)
+## Configuration (`config.json`)
 
-### 3. Set Up Environment Variables
+| Key | Default | Meaning |
+|---|---|---|
+| `symbol` | `AAPL` | Stock to trade |
+| `short_window` | `20` | Short moving average period (days) |
+| `long_window` | `50` | Long moving average period (days) |
+| `trade_quantity` | `1` | Shares per order |
+| `lookback_days` | `100` | Trading days of history fetched from yfinance |
+| `alpaca_base_url` | paper API | Alpaca endpoint |
 
-Create a `.env` file in the project root:
+## Running
 
 ```bash
-cp .env.example .env
+python trading_bot.py               # check for a crossover and trade if one occurred
+python test_alpaca_connection.py    # show buying power and positions
 ```
 
-Then edit `.env` and add your credentials:
-
-```
-APCA_API_KEY_ID=your_actual_api_key_here
-APCA_API_SECRET_KEY=your_actual_secret_key_here
-```
-
-**Important**: Never commit `.env` to git - it contains sensitive credentials!
-
-### 4. Run the Test
-
-```bash
-python test_alpaca_connection.py
-```
-
-## What It Does
-
-The script will:
-- Connect to your Alpaca paper trading account
-- Display your account status
-- Show your **buying power** (how much you can invest)
-- List all **stocks you currently hold** (positions)
-- Show current prices and profit/loss for each position
-
-## Example Output
-
-```
-============================================================
-ALPACA PAPER TRADING ACCOUNT - CONNECTION TEST
-============================================================
-
-✓ Connection successful!
-
-ACCOUNT INFORMATION:
-  Account Status: ACTIVE
-  Account Type: trading
-
-BUYING POWER:
-  Buying Power: $25,000.00
-  Cash: $25,000.00
-  Portfolio Value: $25,000.00
-  Day Trading Buying Power: $25,000.00
-
-POSITIONS (0 position(s)):
-  No positions held
-
-============================================================
-```
-
-## Troubleshooting
-
-- **"API credentials not found"**: Make sure your `.env` file exists and has the correct variable names
-- **"Invalid credentials"**: Double-check your API key and secret key from the Alpaca dashboard
-- **"Connection refused"**: Make sure you have internet connection and Alpaca API is accessible
+The signal uses daily closes, so run the bot once per trading day (e.g. via cron shortly after market open). Orders are market orders with `day` time-in-force; if placed while the market is closed they queue for the next open.
