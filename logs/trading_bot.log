@@ -26,3 +26,32 @@
 2026-10-05 14:37:11 ET INFO [DIA] 2026-10-05 14:15 close $512.54 | short MA $510.93 | long MA $510.62 | short above long
 2026-10-05 14:37:11 ET INFO === Summary: no signals ===
 2026-10-05 14:37:11 ET INFO === Account: settled $260.00 + unsettled $0.00 + positions $0.00 = $260.00 (started $260.00) ===
+2026-10-05 15:05:16 ET INFO === intraday run: 25 symbols | settled cash $260.00 ===
+2026-10-05 15:05:19 ET INFO [AAPL] 2026-10-05 14:45 close $333.72 | short MA $333.58 | long MA $333.23 | short above long
+2026-10-05 15:05:19 ET INFO [MSFT] 2026-10-05 14:45 close $527.38 | short MA $525.90 | long MA $520.10 | short above long
+2026-10-05 15:05:19 ET INFO [NVDA] 2026-10-05 14:45 close $239.38 | short MA $237.32 | long MA $236.07 | short above long
+2026-10-05 15:05:19 ET INFO [GOOGL] 2026-10-05 14:45 close $347.42 | short MA $345.73 | long MA $344.26 | short above long
+2026-10-05 15:05:19 ET INFO [META] 2026-10-05 14:45 close $742.88 | short MA $743.84 | long MA $735.66 | short above long
+2026-10-05 15:05:19 ET INFO [AMZN] 2026-10-05 14:45 close $253.73 | short MA $252.64 | long MA $251.63 | short above long
+2026-10-05 15:05:19 ET INFO [HD] 2026-10-05 14:45 close $282.00 | short MA $281.51 | long MA $282.59 | short below long
+2026-10-05 15:05:19 ET INFO [WMT] 2026-10-05 14:45 close $104.75 | short MA $104.59 | long MA $104.33 | short above long
+2026-10-05 15:05:19 ET INFO [COST] 2026-10-05 14:45 close $920.85 | short MA $922.69 | long MA $918.42 | short above long
+2026-10-05 15:05:19 ET INFO [KO] 2026-10-05 14:45 close $86.41 | short MA $86.26 | long MA $85.87 | short above long
+2026-10-05 15:05:19 ET INFO [JPM] 2026-10-05 14:45 close $332.40 | short MA $332.63 | long MA $332.02 | short above long
+2026-10-05 15:05:19 ET INFO [V] 2026-10-05 14:45 close $369.39 | short MA $367.01 | long MA $362.97 | short above long
+2026-10-05 15:05:19 ET INFO [UNH] 2026-10-05 14:45 close $375.50 | short MA $371.88 | long MA $369.82 | short above long
+2026-10-05 15:05:19 ET INFO [LLY] 2026-10-05 14:45 close $1149.06 | short MA $1150.27 | long MA $1148.40 | short above long
+2026-10-05 15:05:19 ET INFO [JNJ] 2026-10-05 14:45 close $253.58 | short MA $253.82 | long MA $255.35 | short below long
+2026-10-05 15:05:19 ET INFO [XOM] 2026-10-05 14:45 close $163.87 | short MA $163.84 | long MA $163.79 | short above long
+2026-10-05 15:05:20 ET INFO [XOM] BUY $20.00 placed (order c9b0a29d-6538-4803-abf2-bb2c8b88a3a1, pending_new)
+2026-10-05 15:05:20 ET INFO [CVX] 2026-10-05 14:45 close $206.46 | short MA $206.14 | long MA $206.35 | short below long
+2026-10-05 15:05:20 ET INFO [CAT] 2026-10-05 14:45 close $854.24 | short MA $851.24 | long MA $846.84 | short above long
+2026-10-05 15:05:20 ET INFO [NEE] 2026-10-05 14:45 close $76.42 | short MA $76.65 | long MA $76.83 | short below long
+2026-10-05 15:05:20 ET INFO [LIN] 2026-10-05 14:45 close $482.25 | short MA $483.73 | long MA $480.56 | short above long
+2026-10-05 15:05:20 ET INFO [AMT] 2026-10-05 14:45 close $162.05 | short MA $161.67 | long MA $162.28 | short below long
+2026-10-05 15:05:20 ET INFO [SPY] 2026-10-05 14:45 close $775.57 | short MA $773.78 | long MA $771.15 | short above long
+2026-10-05 15:05:20 ET INFO [QQQ] 2026-10-05 14:45 close $755.70 | short MA $754.20 | long MA $751.52 | short above long
+2026-10-05 15:05:20 ET INFO [IWM] 2026-10-05 14:45 close $283.59 | short MA $282.82 | long MA $282.06 | short above long
+2026-10-05 15:05:20 ET INFO [DIA] 2026-10-05 14:45 close $512.73 | short MA $511.34 | long MA $510.79 | short above long
+2026-10-05 15:05:20 ET INFO === Summary: XOM: BUY $20.00 ===
+2026-10-05 15:05:20 ET INFO === Account: settled $240.00 + unsettled $0.00 + positions $19.99 = $259.99 (started $260.00) ===
