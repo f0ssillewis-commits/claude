@@ -20,12 +20,30 @@ cp .env.example .env   # then put your Alpaca paper API key and secret in .env
 
 | Key | Default | Meaning |
 |---|---|---|
-| `symbols` | `AAPL, MSFT, NVDA, SPY, QQQ` | Stocks/ETFs to monitor and trade |
+| `symbols` | 25 symbols (see below) | Stocks/ETFs to monitor and trade |
 | `short_window` | `20` | Short moving average period (days) |
 | `long_window` | `50` | Long moving average period (days) |
 | `trade_quantity` | `1` | Shares per order (per symbol) |
 | `lookback_days` | `100` | Trading days of history fetched from yfinance |
 | `alpaca_base_url` | paper API | Alpaca endpoint |
+
+### Default watchlist
+
+Spread across all 11 S&P sectors plus broad-market ETFs:
+
+| Sector | Symbols |
+|---|---|
+| Technology / Communication | AAPL, MSFT, NVDA, GOOGL, META |
+| Consumer discretionary | AMZN, HD |
+| Consumer staples | WMT, COST, KO |
+| Financials | JPM, V |
+| Health care | UNH, LLY, JNJ |
+| Energy | XOM, CVX |
+| Industrials | CAT |
+| Utilities | NEE |
+| Materials | LIN |
+| Real estate | AMT |
+| Index ETFs | SPY (S&P 500), QQQ (Nasdaq 100), IWM (small caps), DIA (Dow) |
 
 ## Running
 
