@@ -1,0 +1,106 @@
+{
+  "settled_cash": 260,
+  "unsettled": [],
+  "last_relation": {
+    "AAPL": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "MSFT": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "NVDA": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "GOOGL": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "META": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "AMZN": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "HD": {
+      "relation": "below",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "WMT": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "COST": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "KO": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "JPM": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "V": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "UNH": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "LLY": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "JNJ": {
+      "relation": "below",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "XOM": {
+      "relation": "below",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "CVX": {
+      "relation": "below",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "CAT": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "NEE": {
+      "relation": "below",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "LIN": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "AMT": {
+      "relation": "below",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "SPY": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "QQQ": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "IWM": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    },
+    "DIA": {
+      "relation": "above",
+      "bar": "2026-10-05 14:15:00-04:00"
+    }
+  }
+}
