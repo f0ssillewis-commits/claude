@@ -1,6 +1,6 @@
 # Alpaca Moving Average Crossover Bot
 
-Trades a single stock on an Alpaca **paper** account using a moving average crossover:
+Trades a list of stocks/ETFs on an Alpaca **paper** account, applying the same moving average crossover to each symbol independently:
 
 - **Buy** when the short MA crosses *above* the long MA between the last two trading days
 - **Sell** when the short MA crosses *below* the long MA between the last two trading days
@@ -20,10 +20,10 @@ cp .env.example .env   # then put your Alpaca paper API key and secret in .env
 
 | Key | Default | Meaning |
 |---|---|---|
-| `symbol` | `AAPL` | Stock to trade |
+| `symbols` | `AAPL, MSFT, NVDA, SPY, QQQ` | Stocks/ETFs to monitor and trade |
 | `short_window` | `20` | Short moving average period (days) |
 | `long_window` | `50` | Long moving average period (days) |
-| `trade_quantity` | `1` | Shares per order |
+| `trade_quantity` | `1` | Shares per order (per symbol) |
 | `lookback_days` | `100` | Trading days of history fetched from yfinance |
 | `alpaca_base_url` | paper API | Alpaca endpoint |
 
@@ -34,7 +34,7 @@ python trading_bot.py               # check for a crossover and trade if one occ
 python test_alpaca_connection.py    # show buying power and positions
 ```
 
-The signal compares the last two *completed* trading days (today's in-progress price is ignored before the 4pm close). Orders are market orders with `day` time-in-force. On market holidays the bot logs that the market is closed and does nothing.
+The signal compares the last two *completed* trading days (today's in-progress price is ignored before the 4pm close). Orders are market orders with `day` time-in-force. On market holidays the bot logs that the market is closed and does nothing. If one symbol fails (bad ticker, data error), the others still run and the run is marked failed in GitHub Actions.
 
 ## Automated schedule (GitHub Actions)
 
@@ -47,4 +47,4 @@ You can also trigger a run manually from the **Actions** tab ("Trading bot" → 
 
 ## Logs
 
-Every run appends to `logs/trading_bot.log`, which the workflow commits back to the repository, so you can read the full history on GitHub. Each run's console output is also visible in the Actions tab.
+Every run appends to `logs/trading_bot.log` (one section per symbol plus a one-line summary), which the workflow commits back to the repository, so you can read the full history on GitHub. Each run's console output is also visible in the Actions tab.

@@ -66,7 +66,7 @@ def fetch_closes(symbol, lookback_days, now):
     # Pull extra history so we're guaranteed `lookback_days` trading days after weekends/holidays.
     history = yf.Ticker(symbol).history(period="1y", interval="1d")
     if history.empty:
-        fail(f"No price data returned for {symbol}")
+        raise ValueError(f"No price data returned for {symbol}")
     closes = history["Close"]
     # Before the 4pm close, today's bar is an in-progress price, not a real daily close.
     if closes.index[-1].date() == now.date() and now.hour < 16:
@@ -119,54 +119,71 @@ def place_market_order(base_url, headers, symbol, qty, side):
     return response.json()
 
 
-def main():
-    config = load_config()
-    headers = load_credentials()
-    symbol = config["symbol"]
+def process_symbol(symbol, config, headers, now):
     qty = config["trade_quantity"]
     base_url = config["alpaca_base_url"]
-    now = datetime.now(MARKET_TZ)
-
-    log.info("=== Run started for %s ===", symbol)
-
-    if not is_trading_day(base_url, headers, now.date()):
-        log.info("Market is closed today (%s). No action taken.", now.date())
-        return
-
-    log.info("Fetching last %d trading days of %s", config["lookback_days"], symbol)
-    closes = fetch_closes(symbol, config["lookback_days"], now)
-
-    signal, d = detect_crossover(closes, config["short_window"], config["long_window"])
     s, l = config["short_window"], config["long_window"]
-    log.info("Latest close %s: $%.2f", d["date"], d["close"])
-    log.info("Previous day: %d-day MA $%.2f | %d-day MA $%.2f", s, d["prev_short"], l, d["prev_long"])
-    log.info("Latest day:   %d-day MA $%.2f | %d-day MA $%.2f", s, d["curr_short"], l, d["curr_long"])
+
+    log.info("--- %s ---", symbol)
+    closes = fetch_closes(symbol, config["lookback_days"], now)
+    signal, d = detect_crossover(closes, s, l)
+    log.info("[%s] Latest close %s: $%.2f", symbol, d["date"], d["close"])
+    log.info("[%s] Previous day: %d-day MA $%.2f | %d-day MA $%.2f", symbol, s, d["prev_short"], l, d["prev_long"])
+    log.info("[%s] Latest day:   %d-day MA $%.2f | %d-day MA $%.2f", symbol, s, d["curr_short"], l, d["curr_long"])
 
     if signal is None:
-        log.info("No crossover detected. No trade placed.")
-        return
+        log.info("[%s] No crossover detected. No trade placed.", symbol)
+        return "no signal"
 
-    log.info("Crossover detected: %s signal", signal.upper())
+    log.info("[%s] Crossover detected: %s signal", symbol, signal.upper())
     position_qty = get_position_qty(base_url, headers, symbol)
-    log.info("Current %s position: %g share(s)", symbol, position_qty)
+    log.info("[%s] Current position: %g share(s)", symbol, position_qty)
 
     # Long-only: never open a short, and don't stack buys on an existing position.
     if signal == "buy" and position_qty > 0:
-        log.info("Already holding %s. Skipping buy.", symbol)
-        return
+        log.info("[%s] Already holding. Skipping buy.", symbol)
+        return "buy skipped"
     if signal == "sell" and position_qty < qty:
-        log.info("Not enough shares to sell %d. Skipping sell.", qty)
-        return
+        log.info("[%s] Not enough shares to sell %d. Skipping sell.", symbol, qty)
+        return "sell skipped"
 
     order = place_market_order(base_url, headers, symbol, qty, signal)
-    log.info("Order placed: %s %d %s (order id %s, status %s)",
-             signal.upper(), qty, symbol, order["id"], order["status"])
+    log.info("[%s] Order placed: %s %d (order id %s, status %s)",
+             symbol, signal.upper(), qty, order["id"], order["status"])
+    return f"{signal.upper()} {qty}"
+
+
+def main():
+    config = load_config()
+    headers = load_credentials()
+    now = datetime.now(MARKET_TZ)
+    symbols = config["symbols"]
+
+    log.info("=== Run started for %s ===", ", ".join(symbols))
+
+    if not is_trading_day(config["alpaca_base_url"], headers, now.date()):
+        log.info("Market is closed today (%s). No action taken.", now.date())
+        return True
+
+    results = {}
+    for symbol in symbols:
+        try:
+            results[symbol] = process_symbol(symbol, config, headers, now)
+        except requests.exceptions.HTTPError as e:
+            log.error("[%s] Alpaca API returned %s: %s", symbol, e.response.status_code, e.response.text)
+            results[symbol] = "ERROR"
+        except Exception:
+            log.exception("[%s] Unexpected error", symbol)
+            results[symbol] = "ERROR"
+
+    log.info("=== Summary: %s ===", " | ".join(f"{sym}: {res}" for sym, res in results.items()))
+    return "ERROR" not in results.values()
 
 
 if __name__ == "__main__":
     setup_logging()
     try:
-        main()
+        sys.exit(0 if main() else 1)
     except requests.exceptions.HTTPError as e:
         fail(f"Alpaca API returned {e.response.status_code}: {e.response.text}")
     except Exception:
