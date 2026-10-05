@@ -2,10 +2,11 @@ name: Trading bot
 
 on:
   schedule:
-    # GitHub cron is UTC-only: 13:30 UTC = 9:30 EDT (summer), 14:30 UTC = 9:30 EST (winter).
-    # The "Check run time" step skips whichever one isn't 9:30 ET today.
-    - cron: "30 13 * * 1-5"
-    - cron: "30 14 * * 1-5"
+    # Every 15 minutes, 13:00-20:45 UTC on weekdays. That covers 9:30-16:00 ET in both
+    # summer (EDT) and winter (EST); the bot exits immediately when the market is closed
+    # (pre-open, after close, holidays). In daily mode the extra runs are harmless: a
+    # crossover is only acted on once.
+    - cron: "*/15 13-20 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -18,47 +19,29 @@ jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Check run time
-        id: gate
-        run: |
-          if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
-          fi
-          if [ "$(TZ=America/New_York date +%Z)" = "EDT" ]; then expected="30 13 * * 1-5"; else expected="30 14 * * 1-5"; fi
-          if [ "${{ github.event.schedule }}" = "$expected" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Not 9:30 ET for this schedule today; skipping."
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/checkout@v4
-        if: steps.gate.outputs.run == 'true'
 
       - uses: actions/setup-python@v5
-        if: steps.gate.outputs.run == 'true'
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Install dependencies
-        if: steps.gate.outputs.run == 'true'
         run: pip install -r requirements.txt
 
       - name: Run trading bot
-        if: steps.gate.outputs.run == 'true'
         env:
           APCA_API_KEY_ID: ${{ secrets.APCA_API_KEY_ID }}
           APCA_API_SECRET_KEY: ${{ secrets.APCA_API_SECRET_KEY }}
         run: python trading_bot.py
 
-      - name: Save log to repository
-        if: always() && steps.gate.outputs.run == 'true'
+      - name: Save log and account state to repository
+        if: always()
         run: |
+          for path in logs state; do [ -e "$path" ] && git add "$path"; done
+          git diff --cached --quiet && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
-          git add logs/trading_bot.log
-          git diff --cached --quiet && exit 0
-          git commit -m "Trading bot log $(TZ=America/New_York date +%F)"
+          git commit -m "Trading bot run $(TZ=America/New_York date '+%F %H:%M') ET"
           git pull --rebase
           git push

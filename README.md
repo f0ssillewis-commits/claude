@@ -1,11 +1,32 @@
 # Alpaca Moving Average Crossover Bot
 
-Trades a list of stocks/ETFs on an Alpaca **paper** account, applying the same moving average crossover to each symbol independently:
+Paper-trades a list of stocks/ETFs on Alpaca as a rehearsal for a **small live account (~$260)**. Each symbol gets the same moving average crossover:
 
-- **Buy** when the short MA crosses *above* the long MA between the last two trading days
-- **Sell** when the short MA crosses *below* the long MA between the last two trading days
+- **Buy** a fixed dollar amount when the short MA crosses *above* the long MA
+- **Sell** the whole position when the short MA crosses *below* the long MA
 
-The bot is long-only: it skips a buy if you already hold the stock and skips a sell if you don't hold enough shares (so it never opens a short).
+The bot is long-only: it skips a buy if it already holds the symbol and skips a sell if it holds nothing (it never opens a short).
+
+## Simulated small cash account
+
+Your paper account has far more buying power than a real £200 account, so the bot keeps its own budget in `state/<mode>.json` and only trades within it:
+
+- Starts with `starting_cash_usd` (default $260) and buys `trade_amount_usd` (default $20) per signal using fractional shares.
+- No margin: a buy is skipped if there isn't enough **settled** cash.
+- Sale proceeds settle the next trading day (T+1), like a real cash account, and can't be reused until then.
+
+Delete `state/<mode>.json` to reset the budget.
+
+## Modes
+
+| Mode | Bars | Data source | When signals can fire |
+|---|---|---|---|
+| `intraday` (default) | 15-minute | Alpaca market data (IEX feed) | Any 15-minute bar during market hours |
+| `daily` | Daily closes | yfinance | Once per day, at the first run after a crossover |
+
+Only completed bars are used: the bar still forming is ignored. Extended-hours bars are excluded in intraday mode. The bot remembers each symbol's last above/below state, so a crossover that happens between two runs (e.g. a delayed or skipped scheduled run) is still caught.
+
+Run one mode at a time per paper account: both modes trade the same Alpaca positions.
 
 ## Setup
 
@@ -20,12 +41,16 @@ cp .env.example .env   # then put your Alpaca paper API key and secret in .env
 
 | Key | Default | Meaning |
 |---|---|---|
+| `mode` | `intraday` | `intraday` or `daily` |
 | `symbols` | 25 symbols (see below) | Stocks/ETFs to monitor and trade |
-| `short_window` | `20` | Short moving average period (days) |
-| `long_window` | `50` | Long moving average period (days) |
-| `trade_quantity` | `1` | Shares per order (per symbol) |
-| `lookback_days` | `100` | Trading days of history fetched from yfinance |
-| `alpaca_base_url` | paper API | Alpaca endpoint |
+| `short_window` | `20` | Short moving average period (bars) |
+| `long_window` | `50` | Long moving average period (bars) |
+| `trade_amount_usd` | `20` | Dollars per buy (fractional shares) |
+| `starting_cash_usd` | `260` | Simulated account size |
+| `bar_minutes` | `15` | Bar size in intraday mode |
+| `lookback_days` | `100` | Trading days of history in daily mode |
+| `alpaca_base_url` | paper API | Alpaca trading endpoint (`https://api.alpaca.markets` for live) |
+| `alpaca_data_url` | Alpaca data API | Market data endpoint |
 
 ### Default watchlist
 
@@ -45,24 +70,33 @@ Spread across all 11 S&P sectors plus broad-market ETFs:
 | Real estate | AMT |
 | Index ETFs | SPY (S&P 500), QQQ (Nasdaq 100), IWM (small caps), DIA (Dow) |
 
+Symbols are processed in list order, so when cash is short, earlier symbols get priority.
+
 ## Running
 
 ```bash
-python trading_bot.py               # check for a crossover and trade if one occurred
-python test_alpaca_connection.py    # show buying power and positions
+python trading_bot.py               # one pass: check every symbol, trade on crossovers
+python test_alpaca_connection.py    # show the Alpaca account's buying power and positions
 ```
 
-The signal compares the last two *completed* trading days (today's in-progress price is ignored before the 4pm close). Orders are market orders with `day` time-in-force. On market holidays the bot logs that the market is closed and does nothing. If one symbol fails (bad ticker, data error), the others still run and the run is marked failed in GitHub Actions.
+When the market is closed (including holidays) the bot exits without doing anything. If one symbol fails (bad ticker, data error), the others still run and the run is marked failed in GitHub Actions.
 
 ## Automated schedule (GitHub Actions)
 
-`.github/workflows/trading-bot.yml` runs the bot every Monday-Friday at 9:30 AM ET (handles daylight saving automatically). It needs two repository secrets, added under **Settings → Secrets and variables → Actions**:
+`.github/workflows/trading-bot.yml` runs the bot every 15 minutes on weekdays across market hours (daylight saving handled automatically). It needs two repository secrets, added under **Settings → Secrets and variables → Actions**:
 
 - `APCA_API_KEY_ID`
 - `APCA_API_SECRET_KEY`
 
-You can also trigger a run manually from the **Actions** tab ("Trading bot" → "Run workflow"). GitHub's scheduler can start runs a few minutes late.
+You can also trigger a run manually from the **Actions** tab ("Trading bot" → "Run workflow"). GitHub's scheduler often starts runs late and occasionally skips them; that's acceptable for paper testing, but a live account should run on an always-on machine instead.
 
 ## Logs
 
-Every run appends to `logs/trading_bot.log` (one section per symbol plus a one-line summary), which the workflow commits back to the repository, so you can read the full history on GitHub. Each run's console output is also visible in the Actions tab.
+Every run appends one line per symbol plus a summary and account line to `logs/trading_bot.log`, e.g.:
+
+```
+=== Summary: KO: BUY $20.00 | V: sell skipped (not holding) ===
+=== Account: settled $240.00 + unsettled $0.00 + positions $20.00 = $260.00 (started $260.00) ===
+```
+
+The workflow commits the log and `state/` back to the repository after each market-hours run, so you can read the full history on GitHub.
