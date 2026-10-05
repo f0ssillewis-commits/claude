@@ -1,5 +1,5 @@
 {
-  "broker": "alpaca",
+  "broker": "trading212",
   "mode": "intraday",
   "symbols": [
     "AAPL",
@@ -22,21 +22,18 @@
     "CAT",
     "NEE",
     "LIN",
-    "AMT",
-    "SPY",
-    "QQQ",
-    "IWM",
-    "DIA"
+    "AMT"
   ],
   "short_window": 20,
   "long_window": 50,
-  "trade_amount": 20,
-  "starting_cash": 260,
-  "currency_symbol": "$",
+  "trade_amount": 15,
+  "starting_cash": 200,
+  "currency_symbol": "\u00a3",
   "bar_minutes": 15,
   "lookback_days": 100,
   "alpaca_base_url": "https://paper-api.alpaca.markets",
   "alpaca_data_url": "https://data.alpaca.markets",
-  "log_file": "logs/trading_bot.log",
-  "state_file": "state/intraday.json"
+  "log_file": "logs/trading212.log",
+  "state_file": "state/trading212_intraday.json",
+  "t212_base_url": "https://demo.trading212.com/api/v0"
 }
