@@ -4,8 +4,7 @@ Test connection to Alpaca paper trading account.
 Retrieves account information and positions.
 """
 
-from alpaca.trading.client import TradingClient
-from alpaca.trading.requests import GetAssetsRequest
+import requests
 import os
 from dotenv import load_dotenv
 
@@ -28,11 +27,22 @@ def test_alpaca_connection():
         return False
 
     try:
-        # Create Alpaca trading client (paper trading by default)
-        client = TradingClient(api_key=api_key, secret_key=secret_key, paper=True)
+        # Alpaca API endpoints (paper trading)
+        base_url = "https://paper-api.alpaca.markets"
+        headers = {
+            "APCA-API-KEY-ID": api_key,
+            "APCA-API-SECRET-KEY": secret_key
+        }
 
         # Get account information
-        account = client.get_account()
+        account_response = requests.get(f"{base_url}/v2/account", headers=headers)
+        account_response.raise_for_status()
+        account = account_response.json()
+
+        # Get positions
+        positions_response = requests.get(f"{base_url}/v2/positions", headers=headers)
+        positions_response.raise_for_status()
+        positions = positions_response.json()
 
         print("=" * 60)
         print("ALPACA PAPER TRADING ACCOUNT - CONNECTION TEST")
@@ -40,31 +50,41 @@ def test_alpaca_connection():
         print(f"\n✓ Connection successful!\n")
 
         print("ACCOUNT INFORMATION:")
-        print(f"  Account Status: {account.status}")
-        print(f"  Account Type: {account.account_type}")
+        print(f"  Account Status: {account.get('status', 'N/A')}")
+        print(f"  Account Type: {account.get('account_type', 'N/A')}")
         print(f"\nBUYING POWER:")
-        print(f"  Buying Power: ${account.buying_power:,.2f}")
-        print(f"  Cash: ${account.cash:,.2f}")
-        print(f"  Portfolio Value: ${account.portfolio_value:,.2f}")
-        print(f"  Day Trading Buying Power: ${account.daytrading_buying_power:,.2f}")
-
-        # Get positions (stocks held)
-        positions = client.get_all_positions()
+        print(f"  Buying Power: ${float(account.get('buying_power', 0)):,.2f}")
+        print(f"  Cash: ${float(account.get('cash', 0)):,.2f}")
+        print(f"  Portfolio Value: ${float(account.get('portfolio_value', 0)):,.2f}")
+        print(f"  Day Trading Buying Power: ${float(account.get('daytrading_buying_power', 0)):,.2f}")
 
         print(f"\nPOSITIONS ({len(positions)} position(s)):")
         if positions:
             for position in positions:
-                print(f"\n  Symbol: {position.symbol}")
-                print(f"    Quantity: {position.qty}")
-                print(f"    Current Price: ${position.current_price:,.2f}")
-                print(f"    Current Value: ${position.market_value:,.2f}")
-                print(f"    Unrealized P/L: ${position.unrealized_pl:,.2f} ({position.unrealized_plpc*100:.2f}%)")
+                qty = float(position.get('qty', 0))
+                current_price = float(position.get('current_price', 0))
+                market_value = float(position.get('market_value', 0))
+                unrealized_pl = float(position.get('unrealized_pl', 0))
+                unrealized_plpc = float(position.get('unrealized_plpc', 0))
+
+                print(f"\n  Symbol: {position.get('symbol')}")
+                print(f"    Quantity: {qty}")
+                print(f"    Current Price: ${current_price:,.2f}")
+                print(f"    Current Value: ${market_value:,.2f}")
+                print(f"    Unrealized P/L: ${unrealized_pl:,.2f} ({unrealized_plpc*100:.2f}%)")
         else:
             print("  No positions held")
 
         print("\n" + "=" * 60)
         return True
 
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            print(f"ERROR: Invalid API credentials (401 Unauthorized)")
+            print("Please check your APCA_API_KEY_ID and APCA_API_SECRET_KEY in .env")
+        else:
+            print(f"ERROR: HTTP Error {e.response.status_code}: {e}")
+        return False
     except Exception as e:
         print(f"ERROR: Failed to connect to Alpaca: {e}")
         return False
