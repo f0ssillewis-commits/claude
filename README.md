@@ -108,6 +108,18 @@ Leave it running: it runs the Alpaca bot and then the Trading 212 bot one minute
 
 The computer must stay on and awake during market hours (disable sleep, or the runs are missed). A missed run doesn't lose a crossover: each bot remembers each symbol's last above/below state, so the next run catches it, just later.
 
+## Backtesting
+
+`backtest.py` replays the Trading 212 setup (GBP account, `config_trading212.json` watchlist) on historical 15-minute bars with the live bot's rules: signals fill at the next bar's open (the bot runs 1 minute after each bar closes), fixed £ buys from a simulated cash account with next-day settlement, £100 deposited monthly, dividends credited net of 15% US withholding and reinvested, a 0.15% FX fee per conversion, and slippage. It compares against putting the same deposits into an S&P 500 tracker.
+
+```bash
+python backtest.py                                     # last 60 days (Yahoo, no keys needed)
+python backtest.py --source alpaca --start 2021-01-01  # years of data (needs Alpaca keys in .env)
+python backtest.py --fill next_close                   # extra 15-minute execution delay
+```
+
+Results are printed and saved to `backtest_results/`.
+
 ## Trading 212 notes
 
 - Orders are by share quantity, so the bot converts £ amounts to fractional shares using the latest USD price and the GBP/USD rate (from Yahoo Finance). If a quantity is rejected for precision, it retries with fewer decimals; a rejected order is never placed, so this can't double-buy.
